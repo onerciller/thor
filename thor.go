@@ -1,0 +1,69 @@
+package thor
+
+import (
+	"fmt"
+	"net/http"
+	"sync"
+
+	ckrouter "github.com/CloudyKit/router"
+)
+
+const (
+	appName                = "THOR"
+	defaultMultipartMemory = 32 << 20 // 32 MB
+
+)
+
+//HandlerFunc is middleware func
+type HandlerFunc func(*Context) error
+
+//Thor inital struct
+type Thor struct {
+	*RouterGroup
+	router             *ckrouter.Router
+	pool               sync.Pool
+	AppName            string
+	MaxMultipartMemory int64
+}
+
+// New returns a new blank Thor
+func New() *Thor {
+	thor := &Thor{}
+	thor.AppName = appName
+	thor.RouterGroup = &RouterGroup{
+		absolutePath: "/",
+		thor:         thor,
+	}
+	thor.router = ckrouter.New()
+	thor.MaxMultipartMemory = defaultMultipartMemory
+	thor.pool.New = func() interface{} {
+		return thor.AllocateContext()
+	}
+	return thor
+}
+
+//AllocateContext is reusable context using pool
+func (t *Thor) AllocateContext() *Context {
+	return &Context{Thor: t}
+}
+
+//Use method for appending middleware
+func (t *Thor) Use(middlewares ...HandlerFunc) {
+	t.RouterGroup.Use(middlewares...)
+}
+
+//ServeHTTP makes the router implement the http.Handler interface.
+func (t *Thor) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	t.router.ServeHTTP(res, req)
+}
+
+// Run run the http server.
+func (t *Thor) Run(addr string) error {
+	fmt.Printf("%s %s\n\n", colorGreen, banner)
+	fmt.Printf("[%s] Listening and serving HTTP on %s \n", t.AppName, addr)
+
+	if err := http.ListenAndServe(addr, t); err != nil {
+		return err
+	}
+	return nil
+}
