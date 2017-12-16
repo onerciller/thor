@@ -2,14 +2,12 @@ package thor
 
 import (
 	"bytes"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strconv"
-	"strings"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 type ExampleJSON struct {
@@ -17,85 +15,117 @@ type ExampleJSON struct {
 	Lastname string `json:"last_name"`
 }
 
-func performRequest(r http.Handler, method, path string, postData string) *httptest.ResponseRecorder {
-
-	req, _ := http.NewRequest(method, path, nil)
-
-	if strings.ToLower(method) == "post" {
-		data, _ := url.ParseQuery(postData)
-		req, _ = http.NewRequest(method, path, bytes.NewBufferString(data.Encode()))
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-		req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-	} else if strings.ToLower(method) == "post|json" {
-		req, _ = http.NewRequest("POST", path, bytes.NewBufferString(postData))
-		req.Header.Add("Content-Type", "application/json;")
-	}
-
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	return w
-}
-
-func Test_Render(t *testing.T) {
-	m := New()
-	m.GET("/json", func(ctx *Context) error {
-		ctx.JSON(200, &ExampleJSON{Name: "oner", Lastname: "ciller"})
-		return nil
-	})
-
-	w := performRequest(m, "GET", "/json", "")
-	Convey("Json Render", t, func() {
-		So(w.Code, ShouldEqual, http.StatusOK)
-		So(w.Header().Get(ContentType), ShouldEqual, ContentJSON)
-	})
-
-	w = performRequest(m, "GET", "/test", "")
-	Convey("Notfound", t, func() {
-		So(w.Code, ShouldEqual, http.StatusNotFound)
-		So(w.Header().Get(ContentType), ShouldEqual, MIMEPlain)
-	})
-
-}
-
 func TestContextQuery(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("GET", "http://google.com/?foo=bar&page=10&id=", nil)
+	assert.Equal(t, "bar", c.Query("foo"))
+}
 
-	Convey("Get Query", t, func() {
-		value, ok := c.GetQuery("foo")
-		So(true, ShouldEqual, ok)
-		So("bar", ShouldEqual, value)
-	})
+func TestContextQueryArray(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("GET", "http://google.com/?id=3&array[]=array1&array[]=array2", nil)
+	values, ok := c.GetQueryArray("array[]")
+	assert.True(t, true, ok)
+	assert.Equal(t, "array1", values[0])
+}
 
-	Convey("Default Query", t, func() {
-		value := c.DefaultQuery("foo", "none")
-		So("bar", ShouldEqual, value)
-	})
+func TestPostForm(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	body := bytes.NewBufferString("page=test")
+	c.Request, _ = http.NewRequest("POST", "http://google.com?test=bar", body)
+	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
 
-	// assert.Equal(t, "bar", c.DefaultQuery("foo", "none"))
-	// assert.Equal(t, "bar", c.Query("foo"))
+	values, ok := c.GetPostForm("page")
 
-	// value, ok = c.GetQuery("page")
-	// assert.True(t, ok)
-	// assert.Equal(t, "10", value)
-	// assert.Equal(t, "10", c.DefaultQuery("page", "0"))
-	// assert.Equal(t, "10", c.Query("page"))
+	assert.True(t, true, ok)
+	assert.Equal(t, "test", values)
 
-	// value, ok = c.GetQuery("id")
-	// assert.True(t, ok)
-	// assert.Empty(t, value)
-	// assert.Empty(t, c.DefaultQuery("id", "nada"))
-	// assert.Empty(t, c.Query("id"))
+}
 
-	// value, ok = c.GetQuery("NoKey")
-	// assert.False(t, ok)
-	// assert.Empty(t, value)
-	// assert.Equal(t, "nada", c.DefaultQuery("NoKey", "nada"))
-	// assert.Empty(t, c.Query("NoKey"))
+func TestContextFormFile(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "test")
+	if assert.NoError(t, err) {
+		w.Write([]byte("test"))
+	}
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	if assert.NoError(t, err) {
+		assert.Equal(t, "test", f.Filename)
+	}
 
-	// // postform should not mess
-	// value, ok = c.GetPostForm("page")
-	// assert.False(t, ok)
-	// assert.Empty(t, value)
-	// assert.Empty(t, c.PostForm("foo"))
+	assert.NoError(t, c.SaveUploadedFile(f, "test"))
+}
+
+func TestContextMultipartForm(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	mw.WriteField("foo", "bar")
+	w, err := mw.CreateFormFile("file", "test")
+	if assert.NoError(t, err) {
+		w.Write([]byte("test"))
+	}
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.MultipartForm()
+	if assert.NoError(t, err) {
+		assert.NotNil(t, f)
+	}
+
+	assert.NoError(t, c.SaveUploadedFile(f.File["file"][0], "test"))
+}
+
+func TestSaveUploadedOpenFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	mw.Close()
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+
+	f := &multipart.FileHeader{
+		Filename: "file",
+	}
+	assert.Error(t, c.SaveUploadedFile(f, "test"))
+}
+
+func TestSaveUploadedCreateFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "test")
+	if assert.NoError(t, err) {
+		w.Write([]byte("test"))
+	}
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	if assert.NoError(t, err) {
+		assert.Equal(t, "test", f.Filename)
+	}
+
+	assert.Error(t, c.SaveUploadedFile(f, "/"))
+}
+
+// TestContextSetGet tests that a parameter is set correctly on the
+// current context and can be retrieved using Get.
+func TestContextSetGet(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("foo", "bar")
+
+	value, err := c.Get("foo")
+	assert.Equal(t, "bar", value)
+	assert.True(t, err)
+
+	value, err = c.Get("foo2")
+	assert.Nil(t, value)
+	assert.False(t, err)
 }
