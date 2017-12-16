@@ -34,6 +34,7 @@ func New() *Thor {
 		absolutePath: "/",
 		thor:         thor,
 	}
+
 	thor.router = ckrouter.New()
 	thor.MaxMultipartMemory = defaultMultipartMemory
 	thor.pool.New = func() interface{} {

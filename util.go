@@ -14,16 +14,15 @@ func lastChar(str string) uint8 {
 }
 
 func joinPaths(absolutePath, relativePath string) string {
-	if relativePath == "" {
+	if len(relativePath) == 0 {
 		return absolutePath
 	}
-
-	finalPath := path.Join(absolutePath, relativePath)
-	appendSlash := lastChar(relativePath) == '/' && lastChar(finalPath) != '/'
+	absolutePath = path.Join(absolutePath, relativePath)
+	appendSlash := lastChar(relativePath) == '/' && lastChar(absolutePath) != '/'
 	if appendSlash {
-		return finalPath + "/"
+		return absolutePath + "/"
 	}
-	return finalPath
+	return absolutePath
 }
 
 // toString try to convert the argument into a string

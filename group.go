@@ -2,7 +2,6 @@ package thor
 
 import (
 	"net/http"
-	"path"
 
 	ckrouter "github.com/CloudyKit/router"
 )
@@ -29,7 +28,6 @@ const (
 //RouterGroup struct
 type RouterGroup struct {
 	Handlers     []HandlerFunc
-	notFound     []HandlerFunc
 	absolutePath string
 	thor         *Thor
 }
@@ -51,15 +49,7 @@ func (r *RouterGroup) Group(relativePath string, fn func(*RouterGroup), handlers
 }
 
 func (r *RouterGroup) calculateAbsolutePath(relativePath string) string {
-	if len(relativePath) == 0 {
-		return r.absolutePath
-	}
-	absolutePath := path.Join(r.absolutePath, relativePath)
-	appendSlash := lastChar(relativePath) == '/' && lastChar(absolutePath) != '/'
-	if appendSlash {
-		return absolutePath + "/"
-	}
-	return absolutePath
+	return joinPaths(r.absolutePath, relativePath)
 }
 
 //Handle method

@@ -131,13 +131,14 @@ func (c *Context) SetHeader(key, value string) {
 }
 
 // JSON render
-func (c *Context) JSON(status int, value interface{}) {
+func (c *Context) JSON(status int, value interface{}) error {
 	c.Response.Header().Set("Content-Type", "application/json")
 	json, err := json.Marshal(value)
 	if err != nil {
-		panic("couldnt encode response body to json")
+		return err
 	}
 	c.Response.Write(json)
+	return nil
 }
 
 //Bind decode json to interface{}
