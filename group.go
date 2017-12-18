@@ -30,6 +30,7 @@ type RouteGroup struct {
 	Handlers     []HandlerFunc
 	absolutePath string
 	thor         *Thor
+	lastRoute    string
 }
 
 // Use method is  adds middlewares to the group
@@ -48,6 +49,10 @@ func (r *RouteGroup) Group(relativePath string, fn func(*RouteGroup), handlers .
 	return router
 }
 
+func (r *RouteGroup) Routes() string {
+	return r.lastRoute
+}
+
 func (r *RouteGroup) calculateAbsolutePath(relativePath string) string {
 	return joinPaths(r.absolutePath, relativePath)
 }
@@ -55,6 +60,7 @@ func (r *RouteGroup) calculateAbsolutePath(relativePath string) string {
 //Handle method
 func (r *RouteGroup) Handle(httpMethod, relativePath string, handlers []HandlerFunc) {
 	absolutePath := r.calculateAbsolutePath(relativePath)
+	r.lastRoute = absolutePath
 	handlers = r.combineHandlers(handlers)
 	r.thor.router.AddRoute(httpMethod, absolutePath, func(w http.ResponseWriter, req *http.Request, params ckrouter.Parameter) {
 		ctx := r.thor.createContext(w, req, params, handlers)
