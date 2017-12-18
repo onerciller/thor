@@ -25,21 +25,21 @@ const (
 	DELETE = "DELETE"
 )
 
-//RouterGroup struct
-type RouterGroup struct {
+//Group struct
+type Group struct {
 	Handlers     []HandlerFunc
 	absolutePath string
 	thor         *Thor
 }
 
 // Use method is  adds middlewares to the group
-func (r *RouterGroup) Use(middlewares ...HandlerFunc) {
+func (r *Group) Use(middlewares ...HandlerFunc) {
 	r.Handlers = append(r.Handlers, middlewares...)
 }
 
 // Group Creates a new router group.
-func (r *RouterGroup) Group(relativePath string, fn func(*RouterGroup), handlers ...HandlerFunc) *RouterGroup {
-	router := &RouterGroup{
+func (r *Group) Group(relativePath string, fn func(*Group), handlers ...HandlerFunc) *Group {
+	router := &Group{
 		Handlers:     r.combineHandlers(handlers),
 		absolutePath: r.calculateAbsolutePath(relativePath),
 		thor:         r.thor,
@@ -48,12 +48,12 @@ func (r *RouterGroup) Group(relativePath string, fn func(*RouterGroup), handlers
 	return router
 }
 
-func (r *RouterGroup) calculateAbsolutePath(relativePath string) string {
+func (r *Group) calculateAbsolutePath(relativePath string) string {
 	return joinPaths(r.absolutePath, relativePath)
 }
 
 //Handle method
-func (r *RouterGroup) Handle(httpMethod, relativePath string, handlers []HandlerFunc) {
+func (r *Group) Handle(httpMethod, relativePath string, handlers []HandlerFunc) {
 	absolutePath := r.calculateAbsolutePath(relativePath)
 	handlers = r.combineHandlers(handlers)
 	r.thor.router.AddRoute(httpMethod, absolutePath, func(w http.ResponseWriter, req *http.Request, params ckrouter.Parameter) {
@@ -64,46 +64,46 @@ func (r *RouterGroup) Handle(httpMethod, relativePath string, handlers []Handler
 }
 
 // GET is a shortcut for router.Handle("GET", path, handle)
-func (r *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) {
+func (r *Group) GET(relativePath string, handlers ...HandlerFunc) {
 	r.Handle(GET, relativePath, handlers)
 }
 
 //POST handle POST method
-func (r *RouterGroup) POST(path string, handlers ...HandlerFunc) {
+func (r *Group) POST(path string, handlers ...HandlerFunc) {
 	r.Handle(POST, path, handlers)
 }
 
 //PATCH handle PATCH method
-func (r *RouterGroup) PATCH(path string, handlers ...HandlerFunc) {
+func (r *Group) PATCH(path string, handlers ...HandlerFunc) {
 	r.Handle(PATCH, path, handlers)
 }
 
 //PUT handle PUT method
-func (r *RouterGroup) PUT(path string, handlers ...HandlerFunc) {
+func (r *Group) PUT(path string, handlers ...HandlerFunc) {
 	r.Handle(PUT, path, handlers)
 }
 
 //DELETE handle DELETE method
-func (r *RouterGroup) DELETE(path string, handlers ...HandlerFunc) {
+func (r *Group) DELETE(path string, handlers ...HandlerFunc) {
 	r.Handle(DELETE, path, handlers)
 }
 
 //HEAD handle HEAD method
-func (r *RouterGroup) HEAD(path string, handlers ...HandlerFunc) {
+func (r *Group) HEAD(path string, handlers ...HandlerFunc) {
 	r.Handle(HEAD, path, handlers)
 }
 
 //OPTIONS handle OPTIONS method
-func (r *RouterGroup) OPTIONS(path string, handlers ...HandlerFunc) {
+func (r *Group) OPTIONS(path string, handlers ...HandlerFunc) {
 	r.Handle(OPTIONS, path, handlers)
 }
 
 //CONNECT handle OPTIONS method
-func (r *RouterGroup) CONNECT(path string, handlers ...HandlerFunc) {
+func (r *Group) CONNECT(path string, handlers ...HandlerFunc) {
 	r.Handle(CONNECT, path, handlers)
 }
 
-func (r *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
+func (r *Group) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
 	finalSize := len(r.Handlers) + len(handlers)
 	mergedHandlers := make([]HandlerFunc, 0, finalSize)
 	mergedHandlers = append(mergedHandlers, r.Handlers...)
