@@ -37,11 +37,6 @@ func (c *Context) ClientIP() string {
 }
 
 // Param returns the value of the URL param.
-// It is a shortcut for c.params.ByName(key)
-//     r.GET("/user/:id", func(c *thor.Context) {
-//         // a GET request to /user/onerciller
-//         id := c.Param("id") // id == "onerciller"
-//     })
 func (c *Context) Param(name string) string {
 	val := c.params.ByName(name)
 	if val == "" {
@@ -55,8 +50,7 @@ func (c *Context) Query(key string) string {
 	return c.Request.URL.Query().Get(key)
 }
 
-// GetQueryArray returns a slice of strings for a given query key, plus
-// a boolean value whether at least one value exists for the given key.
+// GetQueryArray returns a slice of strings for a given query key
 func (c *Context) GetQueryArray(key string) ([]string, bool) {
 	if values, ok := c.Request.URL.Query()[key]; ok && len(values) > 0 {
 		return values, true
@@ -153,8 +147,7 @@ func (c *Context) Bind(obj interface{}) error {
 	return err
 }
 
-// Set is used to store a new key/value pair exclusively for this context.
-// It also lazy initializes  c.Keys if it was not used previously.
+// Set is used to store a new key/valuel.
 func (c *Context) Set(key string, value interface{}) {
 	if c.data == nil {
 		c.data = make(map[string]interface{})
@@ -162,8 +155,7 @@ func (c *Context) Set(key string, value interface{}) {
 	c.data[key] = value
 }
 
-// Get returns the value for the given key, ie: (value, true).
-// If the value does not exists it returns (nil, false)
+// Get returns the value for the given key
 func (c *Context) Get(key string) (value interface{}, exists bool) {
 	value, exists = c.data[key]
 	return
