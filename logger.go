@@ -42,7 +42,7 @@ func Logger() HandlerFunc {
 		statusColor := colorForStatus(statusCode)
 		methodColor := colorForMethod(method)
 
-		stdlogger.Printf("%s[%s]%s %v |%s %3d %s| %12v | %s |%s %-5s %s %s",
+		stdlogger.Printf("%s[%s]%s %v |%s %3d %s| %12v | %s |%s %-5s %s %s\n",
 			magenta, ctx.Thor.AppName, reset,
 			end.Format("2006/01/02 - 15:04:05"),
 			statusColor, statusCode, reset,

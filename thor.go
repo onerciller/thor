@@ -19,7 +19,7 @@ type HandlerFunc func(*Context) error
 
 //Thor inital struct
 type Thor struct {
-	*Group
+	*RouteGroup
 	router             *ckrouter.Router
 	pool               sync.Pool
 	AppName            string
@@ -30,7 +30,7 @@ type Thor struct {
 func New() *Thor {
 	thor := &Thor{}
 	thor.AppName = appName
-	thor.Group = &Group{
+	thor.RouteGroup = &RouteGroup{
 		absolutePath: "/",
 		thor:         thor,
 	}
@@ -50,7 +50,7 @@ func (t *Thor) AllocateContext() *Context {
 
 //Use method for appending middleware
 func (t *Thor) Use(middlewares ...HandlerFunc) {
-	t.Group.Use(middlewares...)
+	t.RouteGroup.Use(middlewares...)
 }
 
 //ServeHTTP makes the router implement the http.Handler interface.
