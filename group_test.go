@@ -8,15 +8,23 @@ import (
 
 func TestGroup(t *testing.T) {
 	passed := false
-	testrouter := New()
-	testrouter.Group("/api", func(group *RouteGroup) {
-		group.GET("/test", func(c *Context) error {
-			passed = true
-			return nil
-		})
+	thor := New()
+	g1 := thor.Group("/api")
+	g1.GET("/test", func(c *Context) error {
+		passed = true
+		return nil
 	})
-	w := performRequest(testrouter, "GET", "/api/test", "")
 
+	g2 := g1.Group("/123")
+
+	g2.GET("/sub", func(c *Context) error {
+		return nil
+	})
+
+	w := performRequest(thor, "GET", "/api/test", "")
+
+	assert.Equal(t, "/api/test", g1.GetFullPath())
+	assert.Equal(t, "/api/test/123/sub", g2.GetFullPath())
 	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, true, passed)
 
