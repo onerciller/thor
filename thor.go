@@ -31,8 +31,8 @@ func New() *Thor {
 	thor := &Thor{}
 	thor.AppName = appName
 	thor.RouteGroup = &RouteGroup{
-		absolutePath: "/",
-		thor:         thor,
+		prefix: "/",
+		thor:   thor,
 	}
 
 	thor.router = ckrouter.New()

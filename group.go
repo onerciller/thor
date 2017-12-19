@@ -2,6 +2,7 @@ package thor
 
 import (
 	"net/http"
+	"path"
 
 	ckrouter "github.com/CloudyKit/router"
 )
@@ -27,10 +28,9 @@ const (
 
 //RouteGroup struct
 type RouteGroup struct {
-	Handlers     []HandlerFunc
-	absolutePath string
-	thor         *Thor
-	lastRoute    string
+	Handlers []HandlerFunc
+	prefix   string
+	thor     *Thor
 }
 
 // Use method is  adds middlewares to the group
@@ -39,39 +39,34 @@ func (r *RouteGroup) Use(middlewares ...HandlerFunc) {
 }
 
 // Group Creates a new router group.
-func (r *RouteGroup) Group(relativePath string, fn func(*RouteGroup), handlers ...HandlerFunc) *RouteGroup {
+func (r *RouteGroup) Group(relativePath string, handlers ...HandlerFunc) *RouteGroup {
 	router := &RouteGroup{
-		Handlers:     r.combineHandlers(handlers),
-		absolutePath: r.calculateAbsolutePath(relativePath),
-		thor:         r.thor,
+		Handlers: r.combineHandlers(handlers),
+		prefix:   path.Join(r.prefix, relativePath),
+		thor:     r.thor,
 	}
-	fn(router)
 	return router
-}
-
-func (r *RouteGroup) Routes() string {
-	return r.lastRoute
-}
-
-func (r *RouteGroup) calculateAbsolutePath(relativePath string) string {
-	return joinPaths(r.absolutePath, relativePath)
 }
 
 //Handle method
 func (r *RouteGroup) Handle(httpMethod, relativePath string, handlers []HandlerFunc) {
-	absolutePath := r.calculateAbsolutePath(relativePath)
-	r.lastRoute = absolutePath
+	r.prefix = path.Join(r.prefix, relativePath)
 	handlers = r.combineHandlers(handlers)
-	r.thor.router.AddRoute(httpMethod, absolutePath, func(w http.ResponseWriter, req *http.Request, params ckrouter.Parameter) {
+	r.thor.router.AddRoute(httpMethod, r.prefix, func(w http.ResponseWriter, req *http.Request, params ckrouter.Parameter) {
 		ctx := r.thor.createContext(w, req, params, handlers)
 		ctx.Next()
 		r.thor.reuseContext(ctx)
 	})
 }
 
+//GetFullPath is return last route
+func (r *RouteGroup) GetFullPath() string {
+	return r.prefix
+}
+
 // GET is a shortcut for router.Handle("GET", path, handle)
-func (r *RouteGroup) GET(relativePath string, handlers ...HandlerFunc) {
-	r.Handle(GET, relativePath, handlers)
+func (r *RouteGroup) GET(path string, handlers ...HandlerFunc) {
+	r.Handle(GET, path, handlers)
 }
 
 //POST handle POST method
