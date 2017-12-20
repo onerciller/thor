@@ -131,7 +131,7 @@ func (c *Context) GetHeader(key string) string {
 
 // JSON render
 func (c *Context) JSON(status int, value interface{}) error {
-	c.Response.Header().Set("Content-Type", "application/json")
+	c.Response.Header().Set(ContentType, ContentJSON)
 	json, err := json.Marshal(value)
 	if err != nil {
 		return err
