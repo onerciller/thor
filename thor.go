@@ -61,7 +61,7 @@ func (t *Thor) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 // Run run the http server.
 func (t *Thor) Run(addr string) error {
-	fmt.Printf("%s %s\n\n", colorGreen, banner)
+	fmt.Printf("%s\n\n", banner)
 	fmt.Printf("[%s] Listening and serving HTTP on %s \n\n", t.AppName, addr)
 
 	if err := http.ListenAndServe(addr, t); err != nil {
