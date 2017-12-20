@@ -24,7 +24,6 @@ type Thor struct {
 	pool               sync.Pool
 	AppName            string
 	MaxMultipartMemory int64
-	MethodNotAllowed   http.Handler
 }
 
 // New returns a new blank Thor
