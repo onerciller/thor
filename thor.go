@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	ckrouter "github.com/CloudyKit/router"
+	"github.com/julienschmidt/httprouter"
 )
 
 const (
@@ -20,10 +20,11 @@ type HandlerFunc func(*Context) error
 //Thor inital struct
 type Thor struct {
 	*RouteGroup
-	router             *ckrouter.Router
+	router             *httprouter.Router
 	pool               sync.Pool
 	AppName            string
 	MaxMultipartMemory int64
+	MethodNotAllowed   http.Handler
 }
 
 // New returns a new blank Thor
@@ -35,7 +36,7 @@ func New() *Thor {
 		thor:   thor,
 	}
 
-	thor.router = ckrouter.New()
+	thor.router = httprouter.New()
 	thor.MaxMultipartMemory = defaultMultipartMemory
 	thor.pool.New = func() interface{} {
 		return thor.AllocateContext()
@@ -56,6 +57,7 @@ func (t *Thor) Use(middlewares ...HandlerFunc) {
 //ServeHTTP makes the router implement the http.Handler interface.
 func (t *Thor) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	t.router.ServeHTTP(res, req)
+
 }
 
 // Run run the http server.

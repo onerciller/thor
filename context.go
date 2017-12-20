@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	ckrouter "github.com/CloudyKit/router"
+	"github.com/julienschmidt/httprouter"
 )
 
 //Context allow us to pass variables between middleware
@@ -15,7 +15,7 @@ type Context struct {
 	Response ResponseWriter
 	Request  *http.Request
 	data     map[string]interface{}
-	params   ckrouter.Parameter
+	params   httprouter.Params
 	handlers []HandlerFunc
 	index    int8
 	Thor     *Thor
@@ -173,7 +173,7 @@ func (t *Thor) reuseContext(ctx *Context) {
 	t.pool.Put(ctx)
 }
 
-func (c *Thor) createContext(w http.ResponseWriter, req *http.Request, params ckrouter.Parameter, handlers []HandlerFunc) *Context {
+func (c *Thor) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
 	ctx := c.pool.Get().(*Context)
 	ctx.Response = &ctx.writer
 	ctx.Request = req

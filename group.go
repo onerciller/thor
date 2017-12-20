@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"path"
 
-	ckrouter "github.com/CloudyKit/router"
+	"github.com/julienschmidt/httprouter"
 )
 
 const (
@@ -52,7 +52,7 @@ func (r *RouteGroup) Group(relativePath string, handlers ...HandlerFunc) *RouteG
 func (r *RouteGroup) Handle(httpMethod, relativePath string, handlers []HandlerFunc) {
 	r.prefix = path.Join(r.prefix, relativePath)
 	handlers = r.combineHandlers(handlers)
-	r.thor.router.AddRoute(httpMethod, r.prefix, func(w http.ResponseWriter, req *http.Request, params ckrouter.Parameter) {
+	r.thor.router.Handle(httpMethod, r.prefix, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		ctx := r.thor.createContext(w, req, params, handlers)
 		ctx.Next()
 		r.thor.reuseContext(ctx)
